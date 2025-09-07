@@ -125,7 +125,8 @@ export function registerChatHandlers() {
       const chatTitleMatches = await db
         .select()
         .from(chats)
-        .where(and(eq(chats.appId, appIdNum), like(chats.title, `%${query}%`)));
+        .where(and(eq(chats.appId, appIdNum), like(chats.title, `%${query}%`)))
+        .orderBy(desc(chats.createdAt));
 
       // Find chats by message content
       const messageMatches = await db
@@ -148,7 +149,8 @@ export function registerChatHandlers() {
               eq(chats.appId, appIdNum),
               inArray(chats.id, chatIdsFromMessages),
             ),
-          );
+          )
+          .orderBy(desc(chats.createdAt));
       }
 
       // Merge and deduplicate
@@ -157,7 +159,10 @@ export function registerChatHandlers() {
         new Map(allChats.map((c) => [c.id, c])).values(),
       );
 
-      return uniqueChats;
+      // Sort the final results by newest first
+      return uniqueChats.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     },
   );
 }
