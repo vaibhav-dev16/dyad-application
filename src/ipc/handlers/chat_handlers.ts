@@ -118,14 +118,12 @@ export function registerChatHandlers() {
 
   handle(
     "search-chats",
-    async (_, appId: string, query: string): Promise<ChatSummary[]> => {
-      const appIdNum = Number(appId); // Convert to number
-
+    async (_, appId: number, query: string): Promise<ChatSummary[]> => {
       // Find chats by title
       const chatTitleMatches = await db
         .select()
         .from(chats)
-        .where(and(eq(chats.appId, appIdNum), like(chats.title, `%${query}%`)))
+        .where(and(eq(chats.appId, appId), like(chats.title, `%${query}%`)))
         .orderBy(desc(chats.createdAt));
 
       // Find chats by message content
@@ -146,7 +144,7 @@ export function registerChatHandlers() {
           .from(chats)
           .where(
             and(
-              eq(chats.appId, appIdNum),
+              eq(chats.appId, appId),
               inArray(chats.id, chatIdsFromMessages),
             ),
           )

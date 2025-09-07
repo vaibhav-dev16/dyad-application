@@ -31,13 +31,13 @@ test("chat search - basic search dialog functionality", async ({ po }) => {
   await po.page.getByTestId("chat-search-dialog").waitFor();
   
   // Test 4: Search for specific term
-  await po.page.getByRole("textbox", { name: "Search chats" }).fill("todo");
+  await po.page.getByPlaceholder("Search chats").fill("todo");
   
   // Wait a moment for search results
   await po.page.waitForTimeout(500);
   
   // Test 5: Clear search and close
-  await po.page.getByRole("textbox", { name: "Search chats" }).clear();
+  await po.page.getByPlaceholder("Search chats").clear();
   await po.page.keyboard.press("Escape");
 });
 
@@ -69,15 +69,15 @@ test("chat search - with named chats for easier testing", async ({ po }) => {
   await po.page.getByTestId("chat-search-dialog").waitFor();
   
   // Search for "todo" - should find the todo list manager chat
-  await po.page.getByRole("textbox", { name: "Search chats" }).fill("todo");
+  await po.page.getByPlaceholder("Search chats").fill("todo");
   await po.page.waitForTimeout(500);
   
   // Search for "weather" - should find the weather forecast widget chat
-  await po.page.getByRole("textbox", { name: "Search chats" }).fill("weather");
+  await po.page.getByPlaceholder("Search chats").fill("weather");
   await po.page.waitForTimeout(500);
   
   // Search for non-existent term
-  await po.page.getByRole("textbox", { name: "Search chats" }).fill("nonexistent");
+  await po.page.getByPlaceholder("Search chats").fill("nonexistent");
   await po.page.waitForTimeout(500);
   
   await po.page.keyboard.press("Escape");
@@ -116,8 +116,8 @@ test("chat search - navigation and selection", async ({ po }) => {
   await po.page.getByTestId("search-chats-button").click();
   await po.page.getByTestId("chat-search-dialog").waitFor();
   
-  // Select the first chat item (assuming it shows "New Chat" as default title)
-  await po.page.getByText("New Chat").first().click();
+  // Select the first chat item (assuming it shows "Untitled Chat" as default title)
+  await po.page.getByText("Untitled Chat").first().click();
   
   // Dialog should close
   await po.page.getByTestId("chat-search-dialog").waitFor({ state: "hidden" });
