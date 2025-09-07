@@ -43,7 +43,7 @@ export function ChatSearchDialog({
   }, [open, onOpenChange]);
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={onOpenChange} data-testid="chat-search-dialog">
       <CommandInput
         placeholder="Search chats"
         value={searchQuery}

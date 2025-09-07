@@ -166,7 +166,7 @@ export function ChatList({ show }: { show?: boolean }) {
 
   return (
     <>
-      <SidebarGroup className="overflow-y-auto h-[calc(100vh-112px)]">
+      <SidebarGroup className="overflow-y-auto h-[calc(100vh-112px)]" data-testid="chat-list-container">
         <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
         <SidebarGroupContent>
           <div className="flex flex-col space-y-4">
@@ -182,6 +182,7 @@ export function ChatList({ show }: { show?: boolean }) {
               onClick={() => setIsSearchDialogOpen(!isSearchDialogOpen)}
               variant="outline"
               className="flex items-center justify-start gap-2 mx-2 py-3"
+              data-testid="search-chats-button"
             >
               <Search size={16} />
               <span>Search chats</span>
