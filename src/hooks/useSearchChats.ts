@@ -1,22 +1,23 @@
-import { useState, useEffect } from "react";
-import { searchChats } from "@/lib/chat";
-import type { ChatSummary } from "@/lib/schemas";
+import { IpcClient } from "@/ipc/ipc_client";
+import type { ChatSearchResult } from "@/lib/schemas";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export function useSearchChats(appId: number | null, query: string) {
-  const [chats, setChats] = useState<ChatSummary[]>([]);
-  const [loading, setLoading] = useState(false);
+  const enabled = Boolean(appId && query && query.trim().length > 0);
 
-  useEffect(() => {
-    if (!appId || !query) {
-      setChats([]);
-      return;
-    }
-    setLoading(true);
-    searchChats(appId, query)
-      .then(setChats)
-      .catch(() => setChats([]))
-      .finally(() => setLoading(false));
-  }, [appId, query]);
+  const { data, isFetching, isLoading } = useQuery({
+    queryKey: ["search-chats", appId, query],
+    enabled,
+    queryFn: async (): Promise<ChatSearchResult[]> => {
+      // Non-null assertion safe due to enabled guard
+      return IpcClient.getInstance().searchChats(appId as number, query);
+    },
+    placeholderData: keepPreviousData,
+    retry: 0,
+  });
 
-  return { chats, loading };
+  return {
+    chats: data ?? [],
+    loading: enabled ? isFetching || isLoading : false,
+  };
 }

@@ -31,20 +31,3 @@ export async function getAllChats(appId?: number): Promise<ChatSummary[]> {
     throw error;
   }
 }
-/** * Search chats by query string
- * @param appId App ID to filter chats
- * @param query Search query string
- * @returns Array of chat summaries matching the search query
- */
-
-export async function searchChats(
-  appId: number,
-  query: string,
-): Promise<ChatSummary[]> {
-  try {
-    return await IpcClient.getInstance().searchChats(appId, query);
-  } catch (error) {
-    console.error("[CHAT] Error searching chats:", error);
-    throw error;
-  }
-}

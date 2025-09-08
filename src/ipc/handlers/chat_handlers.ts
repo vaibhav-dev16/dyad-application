@@ -1,8 +1,8 @@
 import { ipcMain } from "electron";
 import { db } from "../../db";
 import { apps, chats, messages } from "../../db/schema";
-import { desc, eq, and, like, inArray } from "drizzle-orm";
-import type { ChatSummary } from "../../lib/schemas";
+import { desc, eq, and, like } from "drizzle-orm";
+import type { ChatSearchResult, ChatSummary } from "../../lib/schemas";
 import * as git from "isomorphic-git";
 import * as fs from "fs";
 import { createLoggedHandler } from "./safe_handle";
@@ -118,49 +118,58 @@ export function registerChatHandlers() {
 
   handle(
     "search-chats",
-    async (_, appId: number, query: string): Promise<ChatSummary[]> => {
-      // Find chats by title
+    async (_, appId: number, query: string): Promise<ChatSearchResult[]> => {
+      // 1) Find chats by title and map to ChatSearchResult with no matched message
       const chatTitleMatches = await db
-        .select()
+        .select({
+          id: chats.id,
+          appId: chats.appId,
+          title: chats.title,
+          createdAt: chats.createdAt,
+        })
         .from(chats)
         .where(and(eq(chats.appId, appId), like(chats.title, `%${query}%`)))
-        .orderBy(desc(chats.createdAt));
+        .orderBy(desc(chats.createdAt))
+        .limit(10);
 
-      // Find chats by message content
-      const messageMatches = await db
-        .select({ chatId: messages.chatId })
+      const titleResults: ChatSearchResult[] = chatTitleMatches.map((c) => ({
+        id: c.id,
+        appId: c.appId,
+        title: c.title,
+        createdAt: c.createdAt,
+        matchedMessageContent: null,
+      }));
+
+      // 2) Find messages that match and join to chats to build one result per message
+      const messageResults = await db
+        .select({
+          id: chats.id,
+          appId: chats.appId,
+          title: chats.title,
+          createdAt: chats.createdAt,
+          matchedMessageContent: messages.content,
+        })
         .from(messages)
-        .where(like(messages.content, `%${query}%`));
+        .innerJoin(chats, eq(messages.chatId, chats.id))
+        .where(
+          and(eq(chats.appId, appId), like(messages.content, `%${query}%`)),
+        )
+        .orderBy(desc(chats.createdAt))
+        .limit(10);
 
-      const chatIdsFromMessages = [
-        ...new Set(messageMatches.map((m) => m.chatId)),
-      ];
-
-      // Get chats for those IDs
-      let chatsFromMessages: any[] = [];
-      if (chatIdsFromMessages.length) {
-        chatsFromMessages = await db
-          .select()
-          .from(chats)
-          .where(
-            and(
-              eq(chats.appId, appId),
-              inArray(chats.id, chatIdsFromMessages),
-            ),
-          )
-          .orderBy(desc(chats.createdAt));
-      }
-
-      // Merge and deduplicate
-      const allChats = [...chatTitleMatches, ...chatsFromMessages];
+      // Combine: keep title matches and per-message matches
+      const combined: ChatSearchResult[] = [...titleResults, ...messageResults];
       const uniqueChats = Array.from(
-        new Map(allChats.map((c) => [c.id, c])).values(),
+        new Map(combined.map((item) => [item.id, item])).values(),
       );
 
-      // Sort the final results by newest first
-      return uniqueChats.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      // Sort newest chats first
+      uniqueChats.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
+
+      return uniqueChats;
     },
   );
 }

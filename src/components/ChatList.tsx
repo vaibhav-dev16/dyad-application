@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 import { formatDistanceToNow } from "date-fns";
-import {
-  PlusCircle,
-  MoreVertical,
-  Trash2,
-  Edit3,
-  FileSearchIcon,
-  SearchXIcon,
-  Search,
-} from "lucide-react";
+import { PlusCircle, MoreVertical, Trash2, Edit3, Search } from "lucide-react";
 import { useAtom } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
@@ -166,7 +158,10 @@ export function ChatList({ show }: { show?: boolean }) {
 
   return (
     <>
-      <SidebarGroup className="overflow-y-auto h-[calc(100vh-112px)]" data-testid="chat-list-container">
+      <SidebarGroup
+        className="overflow-y-auto h-[calc(100vh-112px)]"
+        data-testid="chat-list-container"
+      >
         <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
         <SidebarGroupContent>
           <div className="flex flex-col space-y-4">

@@ -4,6 +4,7 @@ import {
   ChatSummariesSchema,
   type UserSettings,
   type ContextPathResults,
+  ChatSearchResultsSchema,
 } from "../lib/schemas";
 import type {
   AppOutput,
@@ -63,7 +64,11 @@ import type {
   UpdatePromptParamsDto,
 } from "./ipc_types";
 import type { Template } from "../shared/templates";
-import type { AppChatContext, ProposalResult } from "@/lib/schemas";
+import type {
+  AppChatContext,
+  ChatSearchResult,
+  ProposalResult,
+} from "@/lib/schemas";
 import { showError } from "@/lib/toast";
 
 export interface ChatStreamCallbacks {
@@ -292,10 +297,10 @@ export class IpcClient {
   public async searchChats(
     appId: number,
     query: string,
-  ): Promise<ChatSummary[]> {
+  ): Promise<ChatSearchResult[]> {
     try {
       const data = await this.ipcRenderer.invoke("search-chats", appId, query);
-      return ChatSummariesSchema.parse(data);
+      return ChatSearchResultsSchema.parse(data);
     } catch (error) {
       showError(error);
       throw error;
