@@ -39,7 +39,7 @@ export function ChatSearchDialog({
   const { chats: searchResults } = useSearchChats(appId, debouncedQuery);
 
   // Show all chats if search is empty, otherwise show search results
-  const chatsToShow = searchQuery.trim() === "" ? allChats : searchResults;
+  const chatsToShow = debouncedQuery.trim() === "" ? allChats : searchResults;
 
   const commandFilter = (
     value: string,
