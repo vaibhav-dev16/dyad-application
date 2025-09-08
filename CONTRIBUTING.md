@@ -20,9 +20,23 @@ Dyad is an Electron app.
 npm install
 ```
 
+**Create the userData directory (required for database)**
+
+```sh
+# Unix/macOS/Linux:
+mkdir -p userData
+
+# Windows PowerShell (run only if folder doesn't exist):
+mkdir userData
+
+# Windows Command Prompt (run only if folder doesn't exist):
+md userData
+```
+
 **Apply migrations:**
 
 ```sh
+# Generate and apply database migrations
 npm run db:generate
 npm run db:push
 ```
@@ -31,6 +45,16 @@ npm run db:push
 
 ```sh
 npm start
+```
+
+## Setup
+
+If you'd like to contribute a pull request, we highly recommend setting the pre-commit hooks which will run the formatter and linter before each git commit. This is a great way of catching issues early on without waiting to run the GitHub Actions for your pull request.
+
+Simply run this once in your repo:
+
+```sh
+npm run init-precommit
 ```
 
 ## Testing
