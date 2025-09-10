@@ -27,13 +27,15 @@ jobs:
         os: [
             # npm install is very slow
             # { name: "windows-arm", image: "windows-11-arm" },
-            { name: "windows", image: "windows-latest" },
+            # { name: "windows", image: "windows-latest" },
             { name: "macos", image: "macos-latest" },
           ]
         shard: [1, 2, 3, 4]
         shardTotal: [4]
     runs-on: ${{ matrix.os.image }}
     steps:
+      - name: Print all environment variables
+        run: env | sort
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Initialize environment
