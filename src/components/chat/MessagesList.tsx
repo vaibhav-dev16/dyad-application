@@ -58,22 +58,21 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
         ref={ref}
         data-testid="messages-list"
       >
-        {messages.length > 0 ? (
-          messages.map((message, index) => (
-            <ChatMessage
-              key={index}
-              message={message}
-              isLastMessage={index === messages.length - 1}
-            />
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
-            <div className="flex flex-1 items-center justify-center text-gray-500">
-              No messages yet
-            </div>
-            {renderSetupBanner()}
-          </div>
-        )}
+        {messages.length > 0
+          ? messages.map((message, index) => (
+              <ChatMessage
+                key={index}
+                message={message}
+                isLastMessage={index === messages.length - 1}
+              />
+            ))
+          : !renderSetupBanner() && (
+              <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
+                <div className="flex flex-1 items-center justify-center text-gray-500">
+                  No messages yet
+                </div>
+              </div>
+            )}
         {!isStreaming && (
           <div className="flex max-w-3xl mx-auto gap-2">
             {!!messages.length &&
@@ -245,6 +244,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
             />
           )}
         <div ref={messagesEndRef} />
+        {renderSetupBanner()}
       </div>
     );
   },

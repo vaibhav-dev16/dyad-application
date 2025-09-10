@@ -107,7 +107,16 @@ export function ModelPicker() {
   // Get auto provider models (if any)
   const autoModels =
     !loading && modelsByProviders && modelsByProviders["auto"]
-      ? modelsByProviders["auto"]
+      ? modelsByProviders["auto"].filter((model) => {
+          if (
+            settings &&
+            isDyadProEnabled(settings) &&
+            model.apiName === "free"
+          ) {
+            return false;
+          }
+          return true;
+        })
       : [];
 
   // Determine availability of local models
@@ -252,6 +261,18 @@ export function ModelPicker() {
 
             {/* Primary providers as submenus */}
             {primaryProviders.map(([providerId, models]) => {
+              models = models.filter((model) => {
+                // Don't show free models if Dyad Pro is enabled because
+                // we will use the paid models (in Dyad Pro backend) which
+                // don't have the free limitations.
+                if (
+                  isDyadProEnabled(settings) &&
+                  model.apiName.endsWith(":free")
+                ) {
+                  return false;
+                }
+                return true;
+              });
               const provider = providers?.find((p) => p.id === providerId);
               return (
                 <DropdownMenuSub key={providerId}>
