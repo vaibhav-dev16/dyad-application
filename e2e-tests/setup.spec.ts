@@ -5,7 +5,10 @@ const testSetup = testWithConfig({
   showSetupScreen: true,
 });
 
-testSetup("setup ai provider", async ({ po }) => {
+testSetup.only("setup ai provider", async ({ po }) => {
+  await po.goToSettingsTab();
+  await po.page.getByRole("button", { name: "Model Providers" }).dblclick();
+
   await po.page
     .getByRole("button", { name: "Setup Google Gemini API Key" })
     .click();
