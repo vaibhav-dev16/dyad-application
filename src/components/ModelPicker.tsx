@@ -24,6 +24,7 @@ import { useLanguageModelsByProviders } from "@/hooks/useLanguageModelsByProvide
 import { LocalModel } from "@/ipc/ipc_types";
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
 import { useSettings } from "@/hooks/useSettings";
+import { PriceBadge } from "@/components/PriceBadge";
 
 export function ModelPicker() {
   const { settings, updateSettings } = useSettings();
@@ -304,11 +305,7 @@ export function ModelPicker() {
                           >
                             <div className="flex justify-between items-start w-full">
                               <span>{model.displayName}</span>
-                              {model.dollarSigns && (
-                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
-                                  {"$".repeat(model.dollarSigns)}
-                                </span>
-                              )}
+                              <PriceBadge dollarSigns={model.dollarSigns} />
                               {model.tag && (
                                 <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
                                   {model.tag}

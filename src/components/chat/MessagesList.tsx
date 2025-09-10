@@ -2,7 +2,7 @@ import type React from "react";
 import type { Message } from "@/ipc/ipc_types";
 import { forwardRef, useState } from "react";
 import ChatMessage from "./ChatMessage";
-import { SetupBanner } from "../SetupBanner";
+import { OpenRouterSetupBanner, SetupBanner } from "../SetupBanner";
 
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
@@ -29,13 +29,28 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
     const appId = useAtomValue(selectedAppIdAtom);
     const { versions, revertVersion } = useVersions(appId);
     const { streamMessage, isStreaming } = useStreamChat();
-    const { isAnyProviderSetup } = useLanguageModelProviders();
+    const { isAnyProviderSetup, isProviderSetup } = useLanguageModelProviders();
     const { settings } = useSettings();
     const setMessages = useSetAtom(chatMessagesAtom);
     const [isUndoLoading, setIsUndoLoading] = useState(false);
     const [isRetryLoading, setIsRetryLoading] = useState(false);
     const selectedChatId = useAtomValue(selectedChatIdAtom);
     const { userBudget } = useUserBudgetInfo();
+
+    const renderSetupBanner = () => {
+      const selectedModel = settings?.selectedModel;
+      if (
+        selectedModel?.name === "free" &&
+        selectedModel?.provider === "auto" &&
+        !isProviderSetup("openrouter")
+      ) {
+        return <OpenRouterSetupBanner className="w-full" />;
+      }
+      if (!isAnyProviderSetup()) {
+        return <SetupBanner />;
+      }
+      return null;
+    };
 
     return (
       <div
@@ -56,7 +71,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
             <div className="flex flex-1 items-center justify-center text-gray-500">
               No messages yet
             </div>
-            {!isAnyProviderSetup() && <SetupBanner />}
+            {renderSetupBanner()}
           </div>
         )}
         {!isStreaming && (
