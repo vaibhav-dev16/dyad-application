@@ -840,9 +840,9 @@ This conversation includes one or more image attachments. When the user uploads 
             modelClient,
             tools: {
               ...tools,
-              "edit-code": {
+              "generate-code": {
                 description:
-                  "Signal to switch to code editing. Does nothing and ends generation.",
+                  "ALWAYS use this tool whenever generating or editing code for the codebase.",
                 inputSchema: z.object({}),
                 execute: async () => "",
               },
