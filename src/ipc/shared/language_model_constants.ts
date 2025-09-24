@@ -297,6 +297,15 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       dollarSigns: 1,
     },
     {
+      name: "grok-4-fast",
+      displayName: "Grok 4 Fast",
+      description: "Most capable coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 2_000_000,
+      temperature: 0,
+      dollarSigns: 1,
+    },
+    {
       name: "grok-4",
       displayName: "Grok 4",
       description: "Most capable coding model",
