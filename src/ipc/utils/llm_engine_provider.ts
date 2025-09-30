@@ -164,8 +164,10 @@ export function createDyadEngine(
                 options.dyadOptions.enableSmartFilesContext,
               smart_context_mode: options.dyadOptions.smartContextMode,
               enable_web_search: options.dyadOptions.enableWebSearch,
-              mentioned_apps: dyadMentionedApps,
             };
+            if (dyadMentionedApps?.length) {
+              parsedBody.dyad_options.mentioned_apps = dyadMentionedApps;
+            }
           }
 
           // Return modified request with files included and requestId in headers
