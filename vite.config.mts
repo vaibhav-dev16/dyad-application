@@ -3,7 +3,6 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// Temporary shim: reuse this as the single web config under new name `vite.config.ts`
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -14,6 +13,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    target: "es2020",
   },
   server: {
     port: 5173,
@@ -24,3 +24,4 @@ export default defineConfig({
     strictPort: false,
   },
 });
+

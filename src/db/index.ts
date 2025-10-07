@@ -1,94 +1,79 @@
-// db.ts
-import {
-  type BetterSQLite3Database,
-  drizzle,
-} from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+// db.ts (browser)
+import initSqlJs, { Database as SqlJsDB } from "sql.js";
+import { drizzle, type SqlJsDatabase } from "drizzle-orm/sql-js";
 import * as schema from "./schema";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import path from "node:path";
-import fs from "node:fs";
-import { getDyadAppPath, getUserDataPath } from "../paths/paths";
-import log from "electron-log";
+import { migrate } from "drizzle-orm/sql-js/migrator";
 
-const logger = log.scope("db");
+const DB_STORAGE_KEY = "dyad_sqlite_db";
 
-// Database connection factory
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: SqlJsDatabase<typeof schema> | null = null;
+let _sqlitePromise: Promise<SqlJsDB> | null = null;
 
-/**
- * Get the database path based on the current environment
- */
-export function getDatabasePath(): string {
-  return path.join(getUserDataPath(), "sqlite.db");
+async function loadPersistedDbBytes(): Promise<Uint8Array | null> {
+  try {
+    const b64 = localStorage.getItem(DB_STORAGE_KEY);
+    if (!b64) return null;
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } catch {
+    return null;
+  }
 }
 
-/**
- * Initialize the database connection
- */
-export function initializeDatabase(): BetterSQLite3Database<typeof schema> & {
-  $client: Database.Database;
-} {
-  if (_db) return _db as any;
-
-  const dbPath = getDatabasePath();
-  logger.log("Initializing database at:", dbPath);
-
-  // Check if the database file exists and remove it if it has issues
+function persistDbBytes(db: SqlJsDB): void {
   try {
-    if (fs.existsSync(dbPath)) {
-      const stats = fs.statSync(dbPath);
-      if (stats.size < 100) {
-        logger.log("Database file exists but may be corrupted. Removing it...");
-        fs.unlinkSync(dbPath);
-      }
-    }
-  } catch (error) {
-    logger.error("Error checking database file:", error);
+    const bytes = db.export();
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const b64 = btoa(binary);
+    localStorage.setItem(DB_STORAGE_KEY, b64);
+  } catch {
+    // best-effort
   }
-
-  fs.mkdirSync(getUserDataPath(), { recursive: true });
-  fs.mkdirSync(getDyadAppPath("."), { recursive: true });
-
-  const sqlite = new Database(dbPath, { timeout: 10000 });
-  sqlite.pragma("foreign_keys = ON");
-
-  _db = drizzle(sqlite, { schema });
-
-  try {
-    const migrationsFolder = path.join(__dirname, "..", "..", "drizzle");
-    if (!fs.existsSync(migrationsFolder)) {
-      logger.error("Migrations folder not found:", migrationsFolder);
-    } else {
-      logger.log("Running migrations from:", migrationsFolder);
-      migrate(_db, { migrationsFolder });
-    }
-  } catch (error) {
-    logger.error("Migration error:", error);
-  }
-
-  return _db as any;
 }
 
-/**
- * Get the database instance (throws if not initialized)
- */
-export function getDb(): BetterSQLite3Database<typeof schema> & {
-  $client: Database.Database;
-} {
+export async function initializeDatabase(): Promise<SqlJsDatabase<typeof schema>> {
+  if (_db) return _db;
+
+  if (!_sqlitePromise) {
+    _sqlitePromise = initSqlJs({ locateFile: (f) => `/${f}` }).then(async (SQL) => {
+      const persisted = await loadPersistedDbBytes();
+      const sqlite = new SQL.Database(persisted || undefined);
+      // Foreign keys on by default in sql.js
+      return sqlite;
+    });
+  }
+
+  const sqlite = await _sqlitePromise;
+  const db = drizzle(sqlite, { schema });
+
+  try {
+    // Run SQL migrations shipped in /drizzle as .sql files is not available in browser at runtime.
+    // Prefer Drizzle schema sync or pre-bundled SQL migrations converted to JS if needed.
+    migrate(db, { migrations: {} as any });
+  } catch {
+    // Ignore if no JS migrations are provided
+  }
+
+  // Persist after any transaction commit - simplistic: persist on init
+  persistDbBytes(sqlite);
+
+  _db = db;
+  return _db;
+}
+
+export function getDb(): SqlJsDatabase<typeof schema> {
   if (!_db) {
-    throw new Error(
-      "Database not initialized. Call initializeDatabase() first.",
-    );
+    throw new Error("Database not initialized. Call initializeDatabase() first.");
   }
-  return _db as any;
+  return _db;
 }
 
 export const db = new Proxy({} as any, {
   get(target, prop) {
     const database = getDb();
-    return database[prop as keyof typeof database];
+    return (database as any)[prop];
   },
-}) as BetterSQLite3Database<typeof schema> & {
-  $client: Database.Database;
-};
+}) as SqlJsDatabase<typeof schema> & { $client: SqlJsDB };

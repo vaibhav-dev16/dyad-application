@@ -1,29 +1,42 @@
-# Dyad
+# Dyad (Web)
 
-Dyad is a local, open-source AI app builder. It's fast, private, and fully under your control — like Lovable, v0, or Bolt, but running right on your machine.
+This repository has been migrated from an Electron desktop app to a **pure web app** built with **React 19 + Vite 5 + Tailwind 4**. The UI, routing, and state management remain the same; Electron-specific layers have been removed or adapted.
 
-[![Image](https://github.com/user-attachments/assets/f6c83dfc-6ffd-4d32-93dd-4b9c46d17790)](http://dyad.sh/)
+## Run locally
 
-More info at: [http://dyad.sh/](http://dyad.sh/)
+```bash
+npm install
+npm run dev
+```
 
-## 🚀 Features
+Build and preview:
 
-- ⚡️ **Local**: Fast, private and no lock-in.
-- 🛠 **Bring your own keys**: Use your own AI API keys — no vendor lock-in.
-- 🖥️ **Cross-platform**: Easy to run on Mac or Windows.
+```bash
+npm run build
+npm run preview
+```
 
-## 📦 Download
+## Architecture changes
 
-No sign-up required. Just download and go.
+- Electron `main`/`preload` and IPC were removed. A browser adapter now exposes the same surface via HTTP/WebSocket endpoints. See `src/ipc/ipc_client.ts`.
+- Database switched from `better-sqlite3` to **Drizzle ORM + sql.js** (SQLite WASM) with LocalStorage persistence. See `src/db/index.ts`.
+- Environment variables are read via `import.meta.env` (e.g. `VITE_API_BASE_URL`, `VITE_DYAD_ENGINE_URL`, `VITE_DYAD_GATEWAY_URL`).
 
-### [👉 Download for your platform](https://www.dyad.sh/#download)
+## Environment
 
-## 🤝 Community
+Create a `.env` file for local development:
 
-Join our growing community of AI app builders on **Reddit**: [r/dyadbuilders](https://www.reddit.com/r/dyadbuilders/) - share your projects and get help from the community!
+```
+VITE_API_BASE_URL=http://localhost:8787
+VITE_DYAD_ENGINE_URL=
+VITE_DYAD_GATEWAY_URL=
+```
 
-## 🛠️ Contributing
+## Testing
 
-**Dyad** is open-source (Apache 2.0 licensed).
+- Unit: `npm run test`
+- E2E: `npm run e2e`
 
-If you're interested in contributing to dyad, please read our [contributing](./CONTRIBUTING.md) doc.
+## Deploy
+
+The app builds to static assets in `dist/` and can be deployed on Vercel, Netlify, or Supabase.

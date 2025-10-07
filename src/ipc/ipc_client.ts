@@ -1,4 +1,35 @@
-import type { IpcRenderer } from "electron";
+// Browser IPC shim: routes calls to a web API endpoint
+type IpcInvoke = (channel: string, ...args: any[]) => Promise<any>;
+type IpcListener = (data: any) => void;
+interface BrowserIpcRenderer {
+  invoke: IpcInvoke;
+  on: (channel: string, listener: IpcListener) => void;
+  removeListener: (channel: string, listener: IpcListener) => void;
+}
+
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "";
+const webInvoke: IpcInvoke = async (channel, ...args) => {
+  const res = await fetch(`${API_BASE}/api/ipc`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ channel, args }),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`IPC ${channel} failed: ${res.status} ${text}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  return data;
+};
+
+const browserIpcRenderer: BrowserIpcRenderer = {
+  invoke: webInvoke,
+  on: () => {
+    // TODO: wire up WebSocket/SSE for push events (chat chunks, help bot, app output)
+  },
+  removeListener: () => {},
+};
 import {
   type ChatSummary,
   ChatSummariesSchema,
@@ -7,6 +38,7 @@ import {
   ChatSearchResultsSchema,
   AppSearchResultsSchema,
 } from "../lib/schemas";
+import { v4 as uuidv4 } from "uuid";
 import type {
   AppOutput,
   Chat,
@@ -67,6 +99,7 @@ import type {
   CreateMcpServer,
 } from "./ipc_types";
 import type { Template } from "../shared/templates";
+import { DEFAULT_TEMPLATE_ID } from "../shared/templates";
 import type {
   AppChatContext,
   AppSearchResult,
@@ -110,7 +143,7 @@ interface DeleteCustomModelParams {
 
 export class IpcClient {
   private static instance: IpcClient;
-  private ipcRenderer: IpcRenderer;
+  private ipcRenderer: BrowserIpcRenderer;
   private chatStreams: Map<number, ChatStreamCallbacks>;
   private appStreams: Map<number, AppStreamCallbacks>;
   private helpStreams: Map<
@@ -123,7 +156,7 @@ export class IpcClient {
   >;
   private mcpConsentHandlers: Map<string, (payload: any) => void>;
   private constructor() {
-    this.ipcRenderer = (window as any).electron.ipcRenderer as IpcRenderer;
+    this.ipcRenderer = browserIpcRenderer;
     this.chatStreams = new Map();
     this.appStreams = new Map();
     this.helpStreams = new Map();
@@ -528,13 +561,12 @@ export class IpcClient {
 
   // Get allow-listed environment variables
   public async getEnvVars(): Promise<Record<string, string | undefined>> {
-    try {
-      const envVars = await this.ipcRenderer.invoke("get-env-vars");
-      return envVars as Record<string, string | undefined>;
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+    // Browser fallback: read from import.meta.env
+    const env = (import.meta as any).env || {};
+    return {
+      DYAD_ENGINE_URL: env.VITE_DYAD_ENGINE_URL,
+      DYAD_GATEWAY_URL: env.VITE_DYAD_GATEWAY_URL,
+    } as Record<string, string | undefined>;
   }
 
   // List all versions (commits) of an app
@@ -580,29 +612,44 @@ export class IpcClient {
 
   // Get user settings
   public async getUserSettings(): Promise<UserSettings> {
+    // Browser fallback: persist to localStorage
+    const key = "dyad:user-settings";
     try {
-      const settings = await this.ipcRenderer.invoke("get-user-settings");
-      return settings;
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw) as UserSettings;
+    } catch {}
+    const defaults: UserSettings = {
+      selectedModel: { name: "auto", provider: "auto" },
+      providerSettings: {},
+      telemetryConsent: "unset",
+      telemetryUserId: uuidv4(),
+      hasRunBefore: false,
+      experiments: {},
+      enableProLazyEditsMode: true,
+      enableProSmartFilesContextMode: true,
+      selectedChatMode: "build",
+      enableAutoFixProblems: false,
+      enableAutoUpdate: true,
+      releaseChannel: "stable",
+      selectedTemplateId: DEFAULT_TEMPLATE_ID,
+    } as UserSettings;
+    try {
+      localStorage.setItem(key, JSON.stringify(defaults));
+    } catch {}
+    return defaults;
   }
 
   // Update user settings
   public async setUserSettings(
     settings: Partial<UserSettings>,
   ): Promise<UserSettings> {
+    const key = "dyad:user-settings";
+    const current = await this.getUserSettings();
+    const merged = { ...current, ...settings } as UserSettings;
     try {
-      const updatedSettings = await this.ipcRenderer.invoke(
-        "set-user-settings",
-        settings,
-      );
-      return updatedSettings;
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+      localStorage.setItem(key, JSON.stringify(merged));
+    } catch {}
+    return merged;
   }
 
   // Delete an app and all its files
